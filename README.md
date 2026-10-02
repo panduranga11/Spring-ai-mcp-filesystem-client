@@ -93,22 +93,22 @@ flowchart TD
 
     DISK[("Local Filesystem\n(Desktop)")]:::fsLayer
 
-    User -->|"POST /api/chat"| RC
+    User -->|POST /api/chat| RC
     RC --> CS
     CS --> CC
-    CC -->|"prompt + tool schemas"| GEM
-    GEM -->|"tool call request"| TCP
+    CC -->|prompt + tool schemas| GEM
+    GEM -->|tool call request| TCP
     TCP --> MC
-    MC -->|"STDIO"| SRV
+    MC -->|STDIO| SRV
     SRV --> DISK
-    DISK -->|"result"| SRV
-    SRV -->|"STDIO"| MC
+    DISK -->|result| SRV
+    SRV -->|STDIO| MC
     MC --> TCP
-    TCP -->|"tool result"| GEM
-    GEM -->|"natural-language response"| CC
+    TCP -->|tool result| GEM
+    GEM -->|natural-language response| CC
     CC --> CS
     CS --> RC
-    RC -->|"200 OK"| User
+    RC -->|200 OK| User
 ```
 
 ---
@@ -130,27 +130,27 @@ sequenceDiagram
     participant SRV as Filesystem MCP Server
     participant FS  as Local Filesystem
 
-    User->>RC:  POST /api/chat {"message":"List the files on my desktop"}
-    RC->>CS:    chat(message)
-    CS->>CC:    prompt().system(...).user(message).call()
-    CC->>GEM:   Send prompt + MCP tool schemas
+    User->>RC: POST /api/chat
+    RC->>CS: chat(message)
+    CS->>CC: prompt + system + user message
+    CC->>GEM: Send prompt + MCP tool schemas
 
-    Note over GEM: Gemini analyses the prompt.<br/>Determines a filesystem tool is required.
+    Note over GEM: Gemini analyses the prompt and determines a filesystem tool is required.
 
-    GEM-->>CC:  Tool call request {tool:"list_directory", args:{...}}
-    CC->>TCP:   Resolve tool callback
-    TCP->>MC:   Forward tool invocation
-    MC->>SRV:   STDIO — JSON-RPC tool request
-    SRV->>FS:   Read directory
-    FS-->>SRV:  Directory listing
-    SRV-->>MC:  STDIO — JSON-RPC tool result
-    MC-->>TCP:  Tool result
-    TCP-->>CC:  Tool result injected into conversation
-    CC->>GEM:   Resume with tool result
-    GEM-->>CC:  Final natural-language response
-    CC-->>CS:   response string
-    CS-->>RC:   response string
-    RC-->>User: 200 OK {"response":"Here are the files on your Desktop: ..."}
+    GEM-->>CC: Tool call request - list_directory
+    CC->>TCP: Resolve tool callback
+    TCP->>MC: Forward tool invocation
+    MC->>SRV: STDIO - JSON-RPC tool request
+    SRV->>FS: Read directory
+    FS-->>SRV: Directory listing
+    SRV-->>MC: STDIO - JSON-RPC tool result
+    MC-->>TCP: Tool result
+    TCP-->>CC: Tool result injected into conversation
+    CC->>GEM: Resume with tool result
+    GEM-->>CC: Final natural-language response
+    CC-->>CS: response string
+    CS-->>RC: response string
+    RC-->>User: 200 OK - response text
 ```
 
 ---
@@ -173,9 +173,9 @@ flowchart LR
     TLS["Exposed Tools\nlist_directory · read_file\ncreate_file · move_file · delete_file"]:::extMcp
     RES[("Local Filesystem")]:::fsLayer
 
-    LLM <-->|"tool schemas + calls"| CLT
-    CLT <-->|"JSON-RPC messages"| PRO
-    PRO <-->|"over STDIO"| SRV
+    LLM <-->|tool schemas + calls| CLT
+    CLT <-->|JSON-RPC messages| PRO
+    PRO <-->|over STDIO| SRV
     SRV --> TLS
     TLS <--> RES
 ```
@@ -472,8 +472,8 @@ flowchart TD
     Z(["Response returned to user"]):::userLayer
 
     A --> B --> C --> D
-    D -->|"Yes"| E --> F --> G --> H --> I --> Z
-    D -->|"No"|  J --> Z
+    D -->|Yes| E --> F --> G --> H --> I --> Z
+    D -->|No| J --> Z
 ```
 
 **System prompt enforcement:** `ChatService` sends a system prompt that instructs Gemini to always use MCP tools for filesystem operations and never fabricate results — ensuring Gemini does not hallucinate filesystem state.
